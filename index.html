@@ -149,6 +149,9 @@ input,select,textarea{font-family:inherit;font-size:15px}
 .file-pill:hover{border-color:var(--brass)}
 .file-pill svg{flex:none}
 .file-x{background:none;border:none;color:var(--muted);font-size:16px;line-height:1;padding:0 0 0 4px;cursor:pointer}
+.viewer-modal{max-width:960px;width:100%;height:86vh;display:flex;flex-direction:column;padding:14px;margin-top:4vh}
+.viewer-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+#viewerFrame{flex:1;width:100%;border:1px solid var(--line);border-radius:8px;background:#fff}
 .file-x:hover{color:var(--rev)}
 .item .remark{background:var(--rev-soft);border-left:3px solid var(--rev);border-radius:0 7px 7px 0;padding:8px 11px;font-size:13px;margin-top:9px;color:#8A3620}
 .item .actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:11px;align-items:center}
@@ -423,6 +426,19 @@ input,select,textarea{font-family:inherit;font-size:15px}
   </div>
 </div>
 
+<div class="modal-bg" id="modal-viewer">
+  <div class="modal viewer-modal">
+    <div class="viewer-head">
+      <h3 id="viewerTitle" style="margin:0;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></h3>
+      <div style="display:flex;gap:8px;flex:none">
+        <a id="viewerDl" class="icon-btn" target="_blank" rel="noopener" style="text-decoration:none">⬇ Download</a>
+        <button class="icon-btn" onclick="closeViewer()">✕ Close</button>
+      </div>
+    </div>
+    <iframe id="viewerFrame" src="about:blank" allow="autoplay"></iframe>
+  </div>
+</div>
+
 <div class="modal-bg" id="modal-ask">
   <div class="modal">
     <h3 id="askTitle">Enter name</h3>
@@ -466,7 +482,7 @@ input,select,textarea{font-family:inherit;font-size:15px}
    CONFIG.API_URL ma Apps Script Web App URL nakho = LIVE MODE
 ================================================================ */
 const CONFIG = {
-  API_URL: "https://script.google.com/macros/s/AKfycbz9Dvdj4nuvIiRvZYA0bR1xz6HbsOzUW2Ta0dxmSEuvRNsvwGXvyHuUTj1DP1hMSEY3Dw/exec",            // ← Apps Script Web App URL ahi paste karo (khali = demo mode)
+  API_URL: "",            // ← Apps Script Web App URL ahi paste karo (khali = demo mode)
   ADMIN_PIN: "1234"       // Demo mode only — live ma Settings tab mathi verify thay che
 };
 const IS_LIVE = !!CONFIG.API_URL;
@@ -489,6 +505,11 @@ function apiBg(action, payload){
   if(!IS_LIVE) return;
   api(action, payload).catch(e => toast("⚠ Server: " + e.message));
 }
+
+/* ---------------- session persistence (refresh par logout na thay) ---------------- */
+function saveSession(o){try{localStorage.setItem("s29_session",JSON.stringify(o))}catch(e){}}
+function loadSession(){try{return JSON.parse(localStorage.getItem("s29_session")||"null")}catch(e){return null}}
+function clearSession(){try{localStorage.removeItem("s29_session")}catch(e){}}
 
 const STAGES = ["Design & Working","Selection","Other"];
 const STATUSES = ["Pending","In Progress","Uploaded","Sent to Client","Approved","Revision"];
@@ -634,7 +655,11 @@ function nowStamp(){const d=new Date();let h=d.getHours(),ap=h>=12?"PM":"AM";h=h
 function nextId(prefix,arr){let mx=0;arr.forEach(x=>{const m=String(x.id).match(/\d+$/);if(m)mx=Math.max(mx,+m[0])});return prefix+String(mx+1).padStart(3,"0")}
 function showScreen(id){document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));$(id).classList.add("active");window.scrollTo(0,0)}
 function openModal(id){$(id).classList.add("active")}
-function closeModals(){document.querySelectorAll(".modal-bg").forEach(m=>m.classList.remove("active"))}
+function closeModals(){
+  document.querySelectorAll(".modal-bg").forEach(m=>m.classList.remove("active"));
+  const vf=document.getElementById("viewerFrame");
+  if(vf&&vf.src!=="about:blank")vf.src="about:blank";
+}
 /* Custom popups — browser na prompt/confirm sandboxed preview ma block thay che etle aa vapriye */
 function askText(title,def,cb,allowEmpty){
   $("askTitle").textContent=title;
@@ -657,7 +682,7 @@ document.querySelectorAll(".modal-bg").forEach(m=>m.addEventListener("click",e=>
 async function loginAdmin(){
   const pin=$("adminPin").value.trim();
   if(!IS_LIVE){
-    if(pin===CONFIG.ADMIN_PIN){showScreen("scr-admin");renderAdminHome();toast("Welcome, Space29 team 👋");}
+    if(pin===CONFIG.ADMIN_PIN){saveSession({mode:"admin",pin});showScreen("scr-admin");renderAdminHome();toast("Welcome, Space29 team 👋");}
     else toast("Wrong PIN — please try again");
     return;
   }
@@ -665,8 +690,8 @@ async function loginAdmin(){
     toast("Connecting…");
     const d=await api("adminLogin",{adminPin:pin});
     ADMIN_PIN_S=pin;
-    DB.projects=d.projects;DB.areas=d.areas;DB.items=d.items;DB.notes=d.notes;DB.log=d.log;
-    if(d.templates&&Object.keys(d.templates).length)TEMPLATES=d.templates;
+    hydrateAdmin(d);
+    saveSession({mode:"admin",pin});
     showScreen("scr-admin");renderAdminHome();toast("Welcome, Space29 team 👋");
   }catch(e){toast("⚠ "+e.message)}
 }
@@ -674,7 +699,7 @@ async function loginClient(){
   const pid=$("clientPid").value.trim().toUpperCase(), pin=$("clientPin").value.trim();
   if(!IS_LIVE){
     const p=DB.projects.find(x=>x.id===pid&&x.pin===pin);
-    if(p){clientProject=p.id;showScreen("scr-client");renderClient();toast("Welcome, "+p.client.split(" ")[0]+" 🙏")}
+    if(p){clientProject=p.id;saveSession({mode:"client",pid,pin});showScreen("scr-client");renderClient();toast("Welcome, "+p.client.split(" ")[0]+" 🙏")}
     else toast("Wrong Project ID or PIN");
     return;
   }
@@ -682,12 +707,20 @@ async function loginClient(){
     toast("Connecting…");
     const d=await api("clientLogin",{projectId:pid,pin});
     CLIENT_CRED={pid,pin};
-    DB.projects=[d.project];DB.areas=d.areas;DB.items=d.items;DB.notes=d.notes;DB.log=[];
-    clientProject=d.project.id;
+    hydrateClient(d);
+    saveSession({mode:"client",pid,pin});
     showScreen("scr-client");renderClient();toast("Welcome, "+d.project.client.split(" ")[0]+" 🙏");
   }catch(e){toast("⚠ "+e.message)}
 }
-function logout(){currentProject=null;clientProject=null;$("adminPin").value="";$("clientPin").value="";showScreen("scr-login")}
+function hydrateAdmin(d){
+  DB.projects=d.projects;DB.areas=d.areas;DB.items=d.items;DB.notes=d.notes;DB.log=d.log;
+  if(d.templates&&Object.keys(d.templates).length)TEMPLATES=d.templates;
+}
+function hydrateClient(d){
+  DB.projects=[d.project];DB.areas=d.areas;DB.items=d.items;DB.notes=d.notes;DB.log=[];
+  clientProject=d.project.id;
+}
+function logout(){currentProject=null;clientProject=null;ADMIN_PIN_S="";CLIENT_CRED={pid:"",pin:""};clearSession();$("adminPin").value="";$("clientPin").value="";showScreen("scr-login")}
 
 /* URL param support: portal.com/?p=P001 → client login prefill */
 (function(){const u=new URLSearchParams(location.search);if(u.get("p"))$("clientPid").value=u.get("p").toUpperCase()})();
@@ -743,9 +776,9 @@ function switchTab(t){
 function areaItemsHTML(items,isClient){
   return items.map(it=>{
     const filesHTML=it.files.length?`<div class="files">`+it.files.map((f,fi)=>`
-      <div class="file-wrap"><span class="file-pill" onclick="downloadFile('${f.id||""}','${esc(f.name)}')">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        ${esc(f.name)}${isClient?"":`<button class="file-x" title="Add/edit instruction" onclick="event.stopPropagation();editFileNote('${it.id}',${fi})">📝</button><button class="file-x" title="Delete file" onclick="event.stopPropagation();deleteFile('${it.id}',${fi})">×</button>`}</span>
+      <div class="file-wrap"><span class="file-pill" title="Click to preview" onclick="viewFile('${f.id||""}','${esc(f.name)}')">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        ${esc(f.name)}<button class="file-x" title="Download" onclick="event.stopPropagation();downloadFile('${f.id||""}','${esc(f.name)}')">⬇</button>${isClient?"":`<button class="file-x" title="Add/edit instruction" onclick="event.stopPropagation();editFileNote('${it.id}',${fi})">📝</button><button class="file-x" title="Delete file" onclick="event.stopPropagation();deleteFile('${it.id}',${fi})">×</button>`}</span>
       ${f.note?`<div class="file-note">📝 ${esc(f.note)}</div>`:""}</div>`).join("")+`</div>`:"";
     const remarkHTML=it.remark?`<div class="remark">✎ Revision: ${esc(it.remark)}</div>`:"";
 
@@ -786,7 +819,20 @@ function areaItemsHTML(items,isClient){
     </div>`;
   }).join("")||`<div class="empty">No items in this area yet</div>`;
 }
+/* open/closed state yaad rahe (re-render par accordion band na thay) */
+let openAreas=new Set(), seededProjects=new Set();
+function toggleArea(id,el){
+  if(openAreas.has(id))openAreas.delete(id);else openAreas.add(id);
+  el.classList.toggle("open");
+}
 function renderAreasGeneric(containerId,pid,isClient){
+  if(!seededProjects.has(pid)){
+    seededProjects.add(pid);
+    DB.areas.filter(a=>a.project===pid).forEach(a=>{
+      const its=DB.items.filter(i=>i.area===a.id);
+      if(its.some(i=>i.status==="Sent to Client"||i.status==="Revision"))openAreas.add(a.id);
+    });
+  }
   const areas=DB.areas.filter(a=>a.project===pid).sort((a,b)=>a.order-b.order);
   const mains=areas.filter(a=>!a.parent);
   let html="";
@@ -811,11 +857,11 @@ function areaBlock(a,isSub,isClient,extraClass){
   if(isClient) items=items.filter(i=>["Sent to Client","Approved","Revision"].includes(i.status));
   if(isClient&&!items.length) return "";
   const done=items.filter(i=>i.status==="Approved").length;
-  const openByDefault=items.some(i=>i.status==="Sent to Client"||i.status==="Revision");
+  const isOpen=openAreas.has(a.id);
   const adminBtns=isClient?"":`<button class="mini-act" title="Rename" onclick="event.stopPropagation();renameArea('${a.id}')">✎</button><button class="mini-act" title="Delete" onclick="event.stopPropagation();deleteArea('${a.id}')">🗑</button>`;
   const addBtn=isClient?"":`<div style="padding:10px 16px;border-top:1px solid var(--line)"><button class="icon-btn" style="color:var(--brass);border-style:dashed" onclick="openAddItem('${a.id}')">+ Add item here</button></div>`;
-  return `<div class="area ${isSub?"subarea":""} ${extraClass||""} ${openByDefault?"open":""}">
-    <div class="area-head" onclick="this.parentElement.classList.toggle('open')">
+  return `<div class="area ${isSub?"subarea":""} ${extraClass||""} ${isOpen?"open":""}">
+    <div class="area-head" onclick="toggleArea('${a.id}',this.parentElement)">
       <h4>${isSub?'<span class="sub-mark">↳</span>':""}${esc(a.name)}</h4>
       <div class="right">${adminBtns}<span>${done}/${items.length}</span><span class="caret">▸</span></div>
     </div>
@@ -949,6 +995,18 @@ function downloadFile(id,name){
   if(IS_LIVE&&id){window.open("https://drive.google.com/uc?export=download&id="+id,"_blank");return;}
   toast("⬇ "+name+" will download here (demo — from Drive in the real version)");
 }
+/* ---------------- in-browser viewer (PDF + images) ---------------- */
+const VIEWABLE=["pdf","jpg","jpeg","png","gif","webp"];
+function fileExt(n){return (String(n).split(".").pop()||"").toLowerCase()}
+function viewFile(id,name){
+  if(!IS_LIVE||!id){toast("👁 "+name+" preview will open here (demo)");return;}
+  if(!VIEWABLE.includes(fileExt(name))){downloadFile(id,name);return;}
+  $("viewerTitle").textContent=name;
+  $("viewerDl").href="https://drive.google.com/uc?export=download&id="+id;
+  $("viewerFrame").src="https://drive.google.com/file/d/"+id+"/preview";
+  openModal("modal-viewer");
+}
+function closeViewer(){$("viewerFrame").src="about:blank";closeModals();}
 function copyClientLink(){
   const p=DB.projects.find(x=>x.id===currentProject);
   const link=location.origin+location.pathname+"?p="+p.id;
@@ -1276,6 +1334,35 @@ renderTplList();
 $("askInput").addEventListener("keydown",e=>{if(e.key==="Enter")$("askOk").click()});
 /* live mode = demo banner hide */
 if(IS_LIVE)$("demoBanner").style.display="none";
+/* refresh pachi session auto-restore */
+(async function restoreSession(){
+  const s=loadSession();
+  if(!s)return;
+  if(s.mode==="admin"){
+    if(!IS_LIVE){
+      if(s.pin===CONFIG.ADMIN_PIN){showScreen("scr-admin");renderAdminHome();}
+      return;
+    }
+    try{
+      toast("Restoring session…");
+      const d=await api("adminLogin",{adminPin:s.pin});
+      ADMIN_PIN_S=s.pin;hydrateAdmin(d);
+      showScreen("scr-admin");renderAdminHome();
+    }catch(e){clearSession();toast("Session expired — please log in again");}
+  }else if(s.mode==="client"){
+    if(!IS_LIVE){
+      const p=DB.projects.find(x=>x.id===s.pid&&x.pin===s.pin);
+      if(p){clientProject=p.id;showScreen("scr-client");renderClient();}
+      return;
+    }
+    try{
+      toast("Restoring session…");
+      const d=await api("clientLogin",{projectId:s.pid,pin:s.pin});
+      CLIENT_CRED={pid:s.pid,pin:s.pin};hydrateClient(d);
+      showScreen("scr-client");renderClient();
+    }catch(e){clearSession();toast("Session expired — please log in again");}
+  }
+})();
 </script>
 </body>
 </html>
