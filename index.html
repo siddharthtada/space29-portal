@@ -152,6 +152,37 @@ input,select,textarea{font-family:inherit;font-size:15px}
 .viewer-modal{max-width:960px;width:100%;height:86vh;display:flex;flex-direction:column;padding:14px;margin-top:4vh}
 .viewer-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
 #viewerFrame{flex:1;width:100%;border:1px solid var(--line);border-radius:8px;background:#fff}
+.upload-tracker{margin-top:10px;display:flex;flex-direction:column;gap:6px}
+.upl-row{display:flex;align-items:center;gap:10px;background:#FCFBF8;border:1px solid var(--line);border-radius:8px;padding:8px 11px;font-size:12.5px}
+.upl-row .n{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.upl-row .bar{width:80px;height:5px;background:var(--pend-soft);border-radius:99px;overflow:hidden;flex:none}
+.upl-row .bar i{display:block;height:100%;background:var(--brass);width:0;transition:width .3s}
+.upl-row .st{flex:none;font-weight:600;font-size:11.5px;min-width:70px;text-align:right}
+.upl-row.done{background:var(--ok-soft);border-color:var(--ok)}
+.upl-row.done .st{color:var(--ok)}.upl-row.done .bar i{background:var(--ok);width:100%!important}
+.upl-row.err{background:var(--rev-soft);border-color:var(--rev)}
+.upl-row.err .st{color:var(--rev)}.upl-row.err .bar i{background:var(--rev)}
+.filter-chips{display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 14px}
+.fchip{border:1px solid var(--line);background:var(--card);border-radius:99px;padding:6px 14px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer}
+.fchip.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+.task-row{display:flex;gap:11px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:9px;box-shadow:var(--shadow)}
+.task-check{width:21px;height:21px;border:2px solid var(--line);border-radius:6px;flex:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff;margin-top:1px;background:transparent}
+.task-row.done .task-check{background:var(--ok);border-color:var(--ok)}
+.task-row .t-body{flex:1;min-width:0}
+.t-title{font-weight:600;font-size:14px}
+.task-row.done .t-title{text-decoration:line-through;color:var(--muted)}
+.t-meta{font-size:12px;color:var(--muted);margin-top:3px;display:flex;flex-wrap:wrap;gap:3px 12px}
+.t-meta .overdue{color:var(--rev);font-weight:700}
+.t-note{font-size:12.5px;color:var(--muted);margin-top:4px;background:#FCFBF8;border-radius:6px;padding:5px 9px}
+.visit-card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:11px;box-shadow:var(--shadow)}
+.visit-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px}
+.visit-head .who{font-weight:600;font-size:14px}
+.visit-head .ts{font-size:12px;color:var(--muted);white-space:nowrap}
+.visit-note{font-size:13.5px;margin-bottom:4px}
+.photo-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:9px}
+.photo-thumb{width:92px;height:92px;border-radius:8px;border:1px solid var(--line);object-fit:cover;cursor:pointer;background:#FCFBF8}
+.photo-thumb:hover{border-color:var(--brass)}
+.photo-ph{width:92px;height:92px;border-radius:8px;border:1px dashed var(--line);display:flex;align-items:center;justify-content:center;font-size:10.5px;color:var(--muted);text-align:center;padding:6px;background:#FCFBF8}
 .file-x:hover{color:var(--rev)}
 .item .remark{background:var(--rev-soft);border-left:3px solid var(--rev);border-radius:0 7px 7px 0;padding:8px 11px;font-size:13px;margin-top:9px;color:#8A3620}
 .item .actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:11px;align-items:center}
@@ -252,10 +283,10 @@ input,select,textarea{font-family:inherit;font-size:15px}
       <button class="btn btn-brass" style="width:100%" onclick="loginClient()">View My Project</button>
     </div>
 
-    <!-- <div class="demo-hint">
+    <div class="demo-hint">
       <b>For demo:</b> Admin PIN → <b>1234</b> &nbsp;|&nbsp; Client → Project <b>P001</b>, PIN <b>4827</b><br>
       <span style="font-size:12px">💡 Open <b>P002</b> in Admin — the full standard template (all floors + rooms + items) is auto-loaded there</span>
-    </div> -->
+    </div>
   </div>
 </div>
 
@@ -264,6 +295,7 @@ input,select,textarea{font-family:inherit;font-size:15px}
   <div class="topbar">
     <div class="brand"><h1>SPACE<span>29</span></h1><small>Office Dashboard</small></div>
     <div class="tools">
+      <button class="btn btn-ghost btn-sm" onclick="openTasks()">📋 Tasks</button>
       <button class="btn btn-ghost btn-sm" onclick="openTemplates()">⚙ Templates</button>
       <button class="btn btn-ghost btn-sm" onclick="logout()">Logout</button>
     </div>
@@ -290,6 +322,7 @@ input,select,textarea{font-family:inherit;font-size:15px}
   <div class="tabs">
     <button class="tab active" id="tab-check" onclick="switchTab('check')">Checklist</button>
     <button class="tab" id="tab-notes" onclick="switchTab('notes')">Notes</button>
+    <button class="tab" id="tab-visits" onclick="switchTab('visits')">Site Visits</button>
     <button class="tab" id="tab-log" onclick="switchTab('log')">Approval Log</button>
   </div>
 
@@ -312,10 +345,34 @@ input,select,textarea{font-family:inherit;font-size:15px}
     <div id="noteList"></div>
   </div>
 
+  <div id="pane-visits" style="display:none">
+    <div class="sec-head" style="margin-top:6px">
+      <h3 style="font-size:16px">Site Visits</h3>
+      <button class="btn btn-brass btn-sm" onclick="openAddVisit()">+ Add Visit</button>
+    </div>
+    <div id="visitList"></div>
+  </div>
+
   <div id="pane-log" style="display:none">
     <div class="sec-head" style="margin-top:6px"><h3 style="font-size:16px">Approval Log</h3></div>
     <div id="logList"></div>
   </div>
+  <div class="portal-foot">Space29 Design LLP</div>
+</div>
+
+<!-- ============ TASKS & FOLLOW-UPS ============ -->
+<div id="scr-tasks" class="screen">
+  <div class="topbar">
+    <button class="back-link" onclick="showScreen('scr-admin');renderAdminHome()">← Dashboard</button>
+    <button class="btn btn-ghost btn-sm" onclick="logout()">Logout</button>
+  </div>
+  <div class="stats" id="taskStats"></div>
+  <div class="sec-head">
+    <h3>Tasks &amp; Follow-ups</h3>
+    <button class="btn btn-brass btn-sm" onclick="openAddTask()">+ Add Task</button>
+  </div>
+  <div class="filter-chips" id="taskFilters"></div>
+  <div id="taskList"></div>
   <div class="portal-foot">Space29 Design LLP</div>
 </div>
 
@@ -426,6 +483,36 @@ input,select,textarea{font-family:inherit;font-size:15px}
   </div>
 </div>
 
+<div class="modal-bg" id="modal-visit">
+  <div class="modal">
+    <h3>Add Site Visit</h3>
+    <p style="font-size:12.5px;color:var(--muted);margin-bottom:12px">📅 Date &amp; time automatic stamp thase</p>
+    <div class="field"><label>Visited by</label><input id="nvBy" placeholder="e.g. Siddharth / Jay"></div>
+    <div class="field"><label>Site note / observations</label><textarea id="nvNote" rows="3" placeholder="e.g. POP work 60% complete, electrician ne AC points batavya..."></textarea></div>
+    <div class="field"><label>Photos (optional)</label><input id="nvPhotos" type="file" multiple accept="image/*" style="padding:9px"></div>
+    <div class="m-actions">
+      <button class="btn btn-ghost" onclick="closeModals()">Cancel</button>
+      <button class="btn btn-brass" onclick="createVisit()">Save Visit</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modal-task">
+  <div class="modal">
+    <h3>Add Task / Follow-up</h3>
+    <div class="field"><label>Type</label><select id="ntType"><option>Task</option><option>Follow-up</option></select></div>
+    <div class="field"><label>Title</label><input id="ntTitle" placeholder="e.g. Living Room 3D revision karvani"></div>
+    <div class="field"><label>Assign to (optional)</label><input id="ntWho" placeholder="e.g. Jay"></div>
+    <div class="field"><label>Due date (optional)</label><input id="ntDue" type="date"></div>
+    <div class="field"><label>Project (optional)</label><select id="ntProject"></select></div>
+    <div class="field"><label>Note (optional)</label><textarea id="ntNote" rows="2" placeholder="Extra details..."></textarea></div>
+    <div class="m-actions">
+      <button class="btn btn-ghost" onclick="closeModals()">Cancel</button>
+      <button class="btn btn-brass" onclick="createTask()">Add + Notify Team</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-bg" id="modal-viewer">
   <div class="modal viewer-modal">
     <div class="viewer-head">
@@ -482,7 +569,7 @@ input,select,textarea{font-family:inherit;font-size:15px}
    CONFIG.API_URL ma Apps Script Web App URL nakho = LIVE MODE
 ================================================================ */
 const CONFIG = {
-  API_URL: "https://script.google.com/macros/s/AKfycbz9Dvdj4nuvIiRvZYA0bR1xz6HbsOzUW2Ta0dxmSEuvRNsvwGXvyHuUTj1DP1hMSEY3Dw/exec",            // ← Apps Script Web App URL ahi paste karo (khali = demo mode)
+  API_URL: "",            // ← Apps Script Web App URL ahi paste karo (khali = demo mode)
   ADMIN_PIN: "1234"       // Demo mode only — live ma Settings tab mathi verify thay che
 };
 const IS_LIVE = !!CONFIG.API_URL;
@@ -538,6 +625,14 @@ let DB = {
   notes: [
     {id:"N001", project:"P001", stage:"Selection", text:"Show veneer sample to the client at site", by:"Siddharth", date:"05/07/2026", visible:false},
     {id:"N002", project:"P001", stage:"Design & Working", text:"False ceiling height confirmed at 9'6\" — all 3D views will follow this", by:"Siddharth", date:"03/07/2026", visible:true}
+  ],
+  visits: [
+    {id:"V001", project:"P001", by:"Siddharth", note:"POP work chalu — hall ceiling 60% complete. Electrician ne AC points batavya. Next visit ma window sill levels check karvana.", photos:[{name:"hall-ceiling.jpg"},{name:"ac-points.jpg"}], ts:"05/07/2026 04:30 PM"}
+  ],
+  tasks: [
+    {id:"T001", type:"Task", title:"Living Room 3D night view revise karvu", assignee:"Jay", project:"P001", due:"08/07/2026", status:"Pending", note:"Client ne cove lights joiye", created:"05/07/2026", done:""},
+    {id:"T002", type:"Follow-up", title:"Rameshbhai ne laminate samples yaad karavva", assignee:"Siddharth", project:"P001", due:"06/07/2026", status:"Pending", note:"", created:"04/07/2026", done:""},
+    {id:"T003", type:"Task", title:"Office material rate list update", assignee:"", project:"", due:"", status:"Done", note:"", created:"01/07/2026", done:"03/07/2026"}
   ],
   log: [
     {ts:"29/06/2026 11:42 AM", project:"P001", item:"ITM001", itemName:"Overall Layout Plan", action:"Approved", remark:"", source:"Mobile"},
@@ -714,6 +809,8 @@ async function loginClient(){
 }
 function hydrateAdmin(d){
   DB.projects=d.projects;DB.areas=d.areas;DB.items=d.items;DB.notes=d.notes;DB.log=d.log;
+  DB.tasks=d.tasks||[];
+  DB.visits=d.visits||[];
   if(d.templates&&Object.keys(d.templates).length)TEMPLATES=d.templates;
 }
 function hydrateClient(d){
@@ -765,10 +862,10 @@ function projTitleBlock(p,extra){return `
 function renderProject(){
   const p=DB.projects.find(x=>x.id===currentProject);
   $("projHeader").innerHTML=projTitleBlock(p,`<span>Client PIN <b>${p.pin}</b></span>`);
-  renderAreas();renderNotes();renderLog();
+  renderAreas();renderNotes();renderVisits();renderLog();
 }
 function switchTab(t){
-  ["check","notes","log"].forEach(x=>{
+  ["check","notes","visits","log"].forEach(x=>{
     $("tab-"+x).classList.toggle("active",x===t);
     $("pane-"+x).style.display=x===t?"":"none";
   });
@@ -798,6 +895,7 @@ function areaItemsHTML(items,isClient){
         <div class="top"><div><div class="stage-tag">${esc(it.stage)}</div><h5>${esc(it.name)}</h5></div>
         <span class="chip ${STATUS_CLASS[it.status]}">${it.status==="Sent to Client"?"Awaiting Approval":it.status}</span></div>
         ${filesHTML}${remarkHTML}${act}
+        <div class="actions"><button class="icon-btn" style="font-size:12px" onclick="requestDrawing('${it.id}')">📐 Request Drawing</button></div>
         ${it.sent?`<div class="meta-line">Sent: ${it.sent}</div>`:""}
       </div>`;
     }
@@ -812,6 +910,7 @@ function areaItemsHTML(items,isClient){
         <select class="status-select" onchange="changeStatus('${it.id}',this.value)">${opts}</select>
         <label class="icon-btn">📎 Upload<input type="file" hidden multiple onchange="uploadFiles('${it.id}',this)"></label>
         ${it.status==="Uploaded"?`<button class="icon-btn" style="border-color:var(--brass);color:var(--brass)" onclick="sendToClient('${it.id}')">📤 Send to Client</button>`:""}
+        <button class="icon-btn" title="Team ne Telegram par drawing request moklo" onclick="requestDrawing('${it.id}')">📐</button>
         <button class="mini-act" title="Rename item" onclick="renameItem('${it.id}')">✎</button>
         <button class="mini-act" title="Remove item" onclick="deleteItem('${it.id}')">🗑</button>
       </div>
@@ -921,6 +1020,23 @@ function deleteFile(itemId,fi){
   },"🗑 Delete");
 }
 
+/* ---------------- drawing request → Telegram ---------------- */
+function requestDrawing(itemId){
+  const it=DB.items.find(x=>x.id===itemId);
+  const isClient=!!clientProject&&!currentProject;
+  askConfirm("Request this drawing?","'"+it.name+"'\nSpace29 team will be notified on Telegram.",()=>{
+    DB.log.push({ts:nowStamp(),project:it.project,item:it.id,itemName:it.name,action:"Drawing Requested",remark:"",source:isClient?"Client":"Office"});
+    if(IS_LIVE){
+      const payload=isClient
+        ?{by:"client",projectId:CLIENT_CRED.pid||clientProject,pin:CLIENT_CRED.pin,itemId}
+        :{by:"admin",adminPin:ADMIN_PIN_S,itemId};
+      apiBg("requestDrawing",payload);
+    }
+    toast("📐 Drawing request sent — team notified");
+    if(isClient)renderClient();else renderLog();
+  },"📐 Request","var(--brass)");
+}
+
 /* ---------------- file instruction / note ---------------- */
 function editFileNote(itemId,fi){
   const it=DB.items.find(x=>x.id===itemId);
@@ -943,7 +1059,9 @@ async function uploadFiles(itemId,input){
   const it=DB.items.find(x=>x.id===itemId);
   const files=[...input.files];
   input.value="";
+  if(!files.length)return;
   const added=[];
+
   if(!IS_LIVE){
     files.forEach(f=>{const o={name:f.name,note:""};it.files.push(o);added.push(o);});
     it.uploaded=today();
@@ -953,28 +1071,68 @@ async function uploadFiles(itemId,input){
     askUploadNote(itemId,added);
     return;
   }
-  for(const f of files){
-    if(f.size>25*1024*1024){toast("⚠ "+f.name+" is over 25MB — skipped (use a Drive link)");continue;}
-    toast("⬆ Uploading "+f.name+"…");
+
+  const tracker=showUploadTracker(files);
+  for(let i=0;i<files.length;i++){
+    const f=files[i], row=tracker.rows[i];
+    if(f.size>25*1024*1024){setUplRow(row,"err","Too big (>25MB)",0);continue;}
     try{
+      setUplRow(row,"","Reading…",10);
       const data64=await new Promise((res,rej)=>{
         const r=new FileReader();
+        r.onprogress=e=>{if(e.lengthComputable)setUplRow(row,"","Reading…",10+Math.round(e.loaded/e.total*30))};
         r.onload=()=>res(r.result.split(",")[1]);
-        r.onerror=()=>rej(new Error("Could not read file"));
+        r.onerror=()=>rej(new Error("Read failed"));
         r.readAsDataURL(f);
       });
+      setUplRow(row,"","Uploading…",55);
       const out=await api("uploadFile",{adminPin:ADMIN_PIN_S,itemId,name:f.name,mime:f.type||"application/octet-stream",data64});
+      setUplRow(row,"done","Done ✓",100);
       const o={id:out.id,name:f.name,note:""};
       it.files.push(o);added.push(o);
       it.uploaded=today();
       if(it.status==="Pending"||it.status==="In Progress")it.status="Uploaded";
       renderAreas();
-    }catch(e){toast("⚠ "+f.name+": "+e.message)}
+    }catch(e){setUplRow(row,"err","Failed",100);toast("⚠ "+f.name+": "+e.message)}
   }
+  setTimeout(()=>hideUploadTracker(tracker),1800);
   if(added.length){
     toast(added.length+" file(s) uploaded ✓");
     askUploadNote(itemId,added);
   }
+}
+
+/* ---------------- upload progress UI ---------------- */
+function showUploadTracker(files){
+  let box=document.getElementById("uploadTracker");
+  if(!box){
+    box=document.createElement("div");
+    box.id="uploadTracker";
+    box.style.cssText="position:fixed;bottom:24px;right:16px;left:auto;background:var(--card);border:1px solid var(--line);box-shadow:0 8px 30px rgba(0,0,0,.18);border-radius:12px;padding:14px 15px 12px;max-width:340px;width:calc(100vw - 32px);z-index:80";
+    document.body.appendChild(box);
+  }
+  box.innerHTML=`<div style="font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--brass);margin-bottom:8px">⬆ Uploading ${files.length} file${files.length>1?"s":""}</div><div class="upload-tracker" id="uplList"></div>`;
+  const list=box.querySelector("#uplList");
+  const rows=files.map(f=>{
+    const el=document.createElement("div");
+    el.className="upl-row";
+    el.innerHTML=`<span class="n">${esc(f.name)}</span><span class="bar"><i></i></span><span class="st">Waiting…</span>`;
+    list.appendChild(el);
+    return el;
+  });
+  return {box,rows};
+}
+function setUplRow(row,cls,statusText,pct){
+  if(!row)return;
+  row.className="upl-row"+(cls?" "+cls:"");
+  row.querySelector(".st").textContent=statusText;
+  if(pct!=null)row.querySelector(".bar i").style.width=pct+"%";
+}
+function hideUploadTracker(t){
+  if(!t||!t.box)return;
+  t.box.style.transition="opacity .3s";
+  t.box.style.opacity="0";
+  setTimeout(()=>{if(t.box.parentNode)t.box.parentNode.removeChild(t.box)},350);
 }
 function askUploadNote(itemId,added){
   askText("Any instruction with this upload? (optional)","",v=>{
@@ -1147,6 +1305,15 @@ function createItem(){
 }
 function createNote(){
   const text=$("nnText").value.trim();if(!text)return toast("Write a note first");
+  if(editingNote){
+    const n=DB.notes.find(x=>x.id===editingNote);
+    n.stage=$("nnStage").value;n.text=text;n.visible=$("nnVisible").checked;
+    apiBg("editNote",{adminPin:ADMIN_PIN_S,noteId:editingNote,stage:n.stage,text,visible:n.visible});
+    editingNote=null;
+    closeModals();renderNotes();toast("✎ Note updated ✓");
+    $("nnText").value="";$("nnVisible").checked=false;
+    return;
+  }
   if(IS_LIVE){
     api("addNote",{adminPin:ADMIN_PIN_S,projectId:currentProject,stage:$("nnStage").value,text,by:"Admin",visible:$("nnVisible").checked})
       .then(d=>{DB.notes.push(d.note);renderNotes();toast("Note saved ✓");})
@@ -1161,16 +1328,111 @@ function renderNotes(){
   const notes=DB.notes.filter(n=>n.project===currentProject);
   $("noteList").innerHTML=notes.map(n=>`
     <div class="note ${n.visible?"":"staff-only"}">
-      <div class="n-head"><span class="n-stage">${esc(n.stage)}</span><span class="n-meta">${esc(n.by)} · ${n.date}</span></div>
+      <div class="n-head"><span class="n-stage">${esc(n.stage)}</span>
+        <span style="display:flex;align-items:center;gap:4px"><span class="n-meta">${esc(n.by)} · ${n.date}</span>
+        <button class="mini-act" title="Edit note" onclick="editNoteFn('${n.id}')">✎</button>
+        <button class="mini-act" title="Delete note" onclick="deleteNoteFn('${n.id}')">🗑</button></span>
+      </div>
       <p>${esc(n.text)}</p>
       <div class="n-vis">${n.visible?"👁 Visible to client":"🔒 Staff only"}</div>
     </div>`).join("")||`<div class="empty">No notes yet</div>`;
 }
+let editingNote=null;
+function editNoteFn(id){
+  const n=DB.notes.find(x=>x.id===id);
+  editingNote=id;
+  fillStageSelect("nnStage");
+  $("nnStage").value=n.stage;
+  $("nnText").value=n.text;
+  $("nnVisible").checked=n.visible;
+  openModal("modal-note");
+}
+function deleteNoteFn(id){
+  const n=DB.notes.find(x=>x.id===id);
+  askConfirm("Delete this note?","'"+n.text.slice(0,60)+(n.text.length>60?"…":"")+"'",()=>{
+    DB.notes=DB.notes.filter(x=>x.id!==id);
+    apiBg("deleteNote",{adminPin:ADMIN_PIN_S,noteId:id});
+    toast("🗑 Note deleted");renderNotes();
+  },"🗑 Delete");
+}
+
+/* ---------------- site visits ---------------- */
+function renderVisits(){
+  const visits=(DB.visits||[]).filter(v=>v.project===currentProject);
+  $("visitList").innerHTML=[...visits].reverse().map(v=>`
+    <div class="visit-card">
+      <div class="visit-head">
+        <span class="who">👷 ${esc(v.by)}</span>
+        <span style="display:flex;align-items:center;gap:6px"><span class="ts">🕐 ${v.ts}</span>
+        <button class="mini-act" title="Delete visit" onclick="deleteVisitFn('${v.id}')">🗑</button></span>
+      </div>
+      ${v.note?`<div class="visit-note">${esc(v.note)}</div>`:""}
+      ${v.photos.length?`<div class="photo-grid">`+v.photos.map(ph=>ph.id
+        ?`<img class="photo-thumb" loading="lazy" src="https://drive.google.com/thumbnail?id=${ph.id}&sz=w300" onclick="viewFile('${ph.id}','${esc(ph.name)}')" alt="${esc(ph.name)}">`
+        :`<div class="photo-ph">📷 ${esc(ph.name)}</div>`).join("")+`</div>`:""}
+    </div>`).join("")||`<div class="empty">No site visits yet — "+ Add Visit" thi pehli visit log karo</div>`;
+}
+function openAddVisit(){
+  ["nvBy","nvNote"].forEach(x=>$(x).value="");
+  $("nvPhotos").value="";
+  openModal("modal-visit");
+}
+async function createVisit(){
+  const by=$("nvBy").value.trim();
+  if(!by)return toast("Visited by is required");
+  const note=$("nvNote").value.trim();
+  const photos=[...$("nvPhotos").files];
+  closeModals();
+
+  if(!IS_LIVE){
+    DB.visits.push({id:nextId("V",DB.visits),project:currentProject,by,note,photos:photos.map(f=>({name:f.name})),ts:nowStamp()});
+    renderVisits();toast("📸 Visit logged ✓ (demo)");
+    return;
+  }
+  try{
+    toast("Saving visit…");
+    const d=await api("addVisit",{adminPin:ADMIN_PIN_S,projectId:currentProject,by,note});
+    const visit=d.visit;
+    DB.visits.push(visit);
+    renderVisits();
+    if(photos.length){
+      const tracker=showUploadTracker(photos);
+      for(let i=0;i<photos.length;i++){
+        const f=photos[i],row=tracker.rows[i];
+        if(f.size>25*1024*1024){setUplRow(row,"err","Too big (>25MB)",0);continue;}
+        try{
+          setUplRow(row,"","Reading…",20);
+          const data64=await new Promise((res,rej)=>{
+            const r=new FileReader();
+            r.onload=()=>res(r.result.split(",")[1]);
+            r.onerror=()=>rej(new Error("Read failed"));
+            r.readAsDataURL(f);
+          });
+          setUplRow(row,"","Uploading…",55);
+          const out=await api("uploadVisitPhoto",{adminPin:ADMIN_PIN_S,visitId:visit.id,name:f.name,mime:f.type||"image/jpeg",data64});
+          visit.photos.push({id:out.id,name:f.name});
+          setUplRow(row,"done","Done ✓",100);
+          renderVisits();
+        }catch(e){setUplRow(row,"err","Failed",100);toast("⚠ "+f.name+": "+e.message)}
+      }
+      setTimeout(()=>hideUploadTracker(tracker),1800);
+    }
+    toast("📸 Site visit logged ✓");
+  }catch(e){toast("⚠ "+e.message)}
+}
+function deleteVisitFn(id){
+  const v=DB.visits.find(x=>x.id===id);
+  askConfirm("Delete this visit?","👷 "+v.by+" · "+v.ts+"\nPhotos pan Drive mathi delete thase.",()=>{
+    DB.visits=DB.visits.filter(x=>x.id!==id);
+    apiBg("deleteVisit",{adminPin:ADMIN_PIN_S,visitId:id});
+    toast("🗑 Visit deleted");renderVisits();
+  },"🗑 Delete");
+}
 function renderLog(){
   const rows=DB.log.filter(l=>l.project===currentProject);
   $("logList").innerHTML=rows.map(l=>`
-    <div class="note" style="border-left-color:${l.action==="Approved"?"var(--ok)":"var(--rev)"}">
-      <div class="n-head"><span class="n-stage" style="color:${l.action==="Approved"?"var(--ok)":"var(--rev)"}">${l.action}</span><span class="n-meta">${l.ts} · ${l.source}</span></div>
+    <div class="note" style="border-left-color:${l.action==="Approved"?"var(--ok)":(l.action==="Drawing Requested"?"var(--brass)":"var(--rev)")}">
+      <div class="n-head"><span class="n-stage" style="color:${l.action==="Approved"?"var(--ok)":(l.action==="Drawing Requested"?"var(--brass)":"var(--rev)")}">${l.action}</span><span class="n-meta">${l.ts} · ${l.source}</span></div>
       <p><b>${esc(l.itemName)}</b>${l.remark?" — "+esc(l.remark):""}</p>
     </div>`).join("")||`<div class="empty">No approvals or revisions yet</div>`;
 }
@@ -1233,7 +1495,96 @@ document.querySelector('[onclick="openModal(\'modal-area\')"]').addEventListener
   $("naName").value="";
 });
 /* note modal stage fill */
-document.querySelector('[onclick="openModal(\'modal-note\')"]').addEventListener("click",()=>fillStageSelect("nnStage"));
+document.querySelector('[onclick="openModal(\'modal-note\')"]').addEventListener("click",()=>{editingNote=null;$("nnText").value="";$("nnVisible").checked=false;fillStageSelect("nnStage");});
+
+/* ================================================================
+   TASKS & FOLLOW-UPS (Smart Tracker)
+================================================================ */
+let taskFilter="Open";
+function openTasks(){showScreen("scr-tasks");renderTasks()}
+function dmy(s){const m=String(s).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);return m?new Date(+m[3],+m[2]-1,+m[1]):null}
+function isOverdue(t){
+  if(t.status!=="Pending"||!t.due)return false;
+  const d=dmy(t.due);if(!d)return false;
+  const n=new Date();n.setHours(0,0,0,0);
+  return d<n;
+}
+function renderTasks(){
+  const tasks=DB.tasks||[];
+  const pending=tasks.filter(t=>t.status==="Pending");
+  const overdue=pending.filter(isOverdue);
+  $("taskStats").innerHTML=`
+    <div class="stat"><div class="n">${pending.length}</div><div class="l">Pending</div></div>
+    <div class="stat hot"><div class="n">${overdue.length}</div><div class="l">Overdue</div></div>
+    <div class="stat gold"><div class="n">${tasks.filter(t=>t.status==="Done").length}</div><div class="l">Done</div></div>`;
+  const filters=["Open","Tasks","Follow-ups","Done"];
+  $("taskFilters").innerHTML=filters.map(f=>`<button class="fchip ${f===taskFilter?"active":""}" onclick="taskFilter='${f}';renderTasks()">${f}</button>`).join("");
+  let list=tasks;
+  if(taskFilter==="Open")list=tasks.filter(t=>t.status==="Pending");
+  if(taskFilter==="Tasks")list=tasks.filter(t=>t.type==="Task"&&t.status==="Pending");
+  if(taskFilter==="Follow-ups")list=tasks.filter(t=>t.type==="Follow-up"&&t.status==="Pending");
+  if(taskFilter==="Done")list=tasks.filter(t=>t.status==="Done");
+  /* overdue pela, pachi due date order */
+  list=[...list].sort((a,b)=>(isOverdue(b)-isOverdue(a))||((dmy(a.due)||new Date(9999,0))-(dmy(b.due)||new Date(9999,0))));
+  $("taskList").innerHTML=list.map(t=>{
+    const proj=t.project?DB.projects.find(p=>p.id===t.project):null;
+    const od=isOverdue(t);
+    return `<div class="task-row ${t.status==="Done"?"done":""}">
+      <button class="task-check" onclick="toggleTaskDone('${t.id}')">${t.status==="Done"?"✓":""}</button>
+      <div class="t-body">
+        <div class="t-title">${t.type==="Follow-up"?"🔁 ":""}${esc(t.title)}</div>
+        <div class="t-meta">
+          ${t.assignee?`<span>👤 ${esc(t.assignee)}</span>`:""}
+          ${t.due?`<span class="${od?"overdue":""}">📅 ${t.due}${od?" — OVERDUE":""}</span>`:""}
+          ${proj?`<span>🏠 ${esc(proj.site)}</span>`:""}
+          ${t.done?`<span>✓ ${t.done}</span>`:""}
+        </div>
+        ${t.note?`<div class="t-note">💬 ${esc(t.note)}</div>`:""}
+      </div>
+      <button class="mini-act" title="Delete" onclick="deleteTaskFn('${t.id}')">🗑</button>
+    </div>`;
+  }).join("")||`<div class="empty">No ${taskFilter.toLowerCase()} items — "+ Add Task" thi add karo</div>`;
+}
+function openAddTask(){
+  $("ntProject").innerHTML=`<option value="">— No project —</option>`+DB.projects.map(p=>`<option value="${p.id}">${esc(p.site)} (${p.id})</option>`).join("");
+  ["ntTitle","ntWho","ntDue","ntNote"].forEach(x=>$(x).value="");
+  openModal("modal-task");
+}
+function dateToDMY(v){
+  if(!v)return "";
+  const[y,m,d]=v.split("-");
+  return d+"/"+m+"/"+y;
+}
+function createTask(){
+  const title=$("ntTitle").value.trim();
+  if(!title)return toast("Title is required");
+  const payload={type:$("ntType").value,title,assignee:$("ntWho").value.trim(),projectId:$("ntProject").value,due:dateToDMY($("ntDue").value),note:$("ntNote").value.trim()};
+  if(IS_LIVE){
+    api("addTask",{adminPin:ADMIN_PIN_S,...payload})
+      .then(d=>{DB.tasks.push(d.task);renderTasks();toast("📋 Task added — team notified on Telegram");})
+      .catch(e=>toast("⚠ "+e.message));
+    closeModals();toast("Adding task…");
+    return;
+  }
+  DB.tasks.push({id:nextId("T",DB.tasks),type:payload.type,title,assignee:payload.assignee,project:payload.projectId,due:payload.due,status:"Pending",note:payload.note,created:today(),done:""});
+  closeModals();renderTasks();toast("📋 Task added ✓ (demo — live ma Telegram jase)");
+}
+function toggleTaskDone(id){
+  const t=DB.tasks.find(x=>x.id===id);
+  t.status=t.status==="Done"?"Pending":"Done";
+  t.done=t.status==="Done"?today():"";
+  apiBg("toggleTask",{adminPin:ADMIN_PIN_S,taskId:id,status:t.status});
+  toast(t.status==="Done"?"✓ Done!":"↩ Reopened");
+  renderTasks();
+}
+function deleteTaskFn(id){
+  const t=DB.tasks.find(x=>x.id===id);
+  askConfirm("Delete this task?","'"+t.title+"'",()=>{
+    DB.tasks=DB.tasks.filter(x=>x.id!==id);
+    apiBg("deleteTask",{adminPin:ADMIN_PIN_S,taskId:id});
+    toast("🗑 Task deleted");renderTasks();
+  },"🗑 Delete");
+}
 
 /* ================================================================
    TEMPLATE MANAGER — ek vaar edit karo, badha NAVA projects ma lagu
