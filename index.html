@@ -283,12 +283,12 @@ input,select,textarea{font-family:inherit;font-size:15px}
       <button class="btn btn-brass" style="width:100%" onclick="loginClient()">View My Project</button>
     </div>
 
-    <!-- <div class="demo-hint">
+    <div class="demo-hint">
       <b>For demo:</b> Admin PIN → <b>1234</b> &nbsp;|&nbsp; Client → Project <b>P001</b>, PIN <b>4827</b><br>
       <span style="font-size:12px">💡 Open <b>P002</b> in Admin — the full standard template (all floors + rooms + items) is auto-loaded there</span>
     </div>
   </div>
-</div> -->
+</div>
 
 <!-- ============ ADMIN HOME ============ -->
 <div id="scr-admin" class="screen">
@@ -569,7 +569,7 @@ input,select,textarea{font-family:inherit;font-size:15px}
    CONFIG.API_URL ma Apps Script Web App URL nakho = LIVE MODE
 ================================================================ */
 const CONFIG = {
-  API_URL: "https://script.google.com/macros/s/AKfycbxH3ps0_IRlkPGYYy_8wB5qHz6I7mvo2WjuEvoNeQZhLbAGugwap2kJhDNoYdExWO9-ig/exec",            // ← Apps Script Web App URL ahi paste karo (khali = demo mode)
+  API_URL: "",            // ← Apps Script Web App URL ahi paste karo (khali = demo mode)
   ADMIN_PIN: "1234"       // Demo mode only — live ma Settings tab mathi verify thay che
 };
 const IS_LIVE = !!CONFIG.API_URL;
