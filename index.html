@@ -145,6 +145,7 @@ input,select,textarea{font-family:inherit;font-size:15px}
 .item .files{display:flex;flex-direction:column;align-items:flex-start;gap:7px;margin-top:9px}
 .file-wrap{display:flex;flex-direction:column;gap:3px;max-width:100%}
 .file-note{font-size:12px;color:#7A6A45;background:var(--brass-soft);border-radius:6px;padding:5px 9px;line-height:1.4}
+.file-by{font-size:11px;color:var(--muted);padding:0 2px}
 .file-pill{display:inline-flex;align-items:center;gap:6px;background:#FCFBF8;border:1px solid var(--line);border-radius:7px;padding:6px 10px;font-size:12.5px;color:var(--ink);text-decoration:none;cursor:pointer}
 .file-pill:hover{border-color:var(--brass)}
 .file-pill svg{flex:none}
@@ -163,6 +164,9 @@ input,select,textarea{font-family:inherit;font-size:15px}
 .upl-row.err{background:var(--rev-soft);border-color:var(--rev)}
 .upl-row.err .st{color:var(--rev)}.upl-row.err .bar i{background:var(--rev)}
 .filter-chips{display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 14px}
+.search-row{margin:2px 0 12px}
+.search-box{width:100%;padding:10px 14px;border:1px solid var(--line);border-radius:8px;background:#FCFCFA;font-size:14px;outline:none}
+.search-box:focus{border-color:var(--brass)}
 .fchip{border:1px solid var(--line);background:var(--card);border-radius:99px;padding:6px 14px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer}
 .fchip.active{background:var(--ink);color:#fff;border-color:var(--ink)}
 .task-row{display:flex;gap:11px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:9px;box-shadow:var(--shadow)}
@@ -271,7 +275,7 @@ input,select,textarea{font-family:inherit;font-size:15px}
     <div class="login-card">
       <h3>Office Login</h3>
       <p class="sub">For Space29 team members</p>
-      <div class="field"><label>Admin PIN</label><input type="password" id="adminPin" inputmode="numeric" maxlength="6" placeholder="••••"></div>
+      <div class="field"><label>Your PIN</label><input type="password" id="adminPin" inputmode="numeric" maxlength="6" placeholder="••••"></div>
       <button class="btn btn-primary" onclick="loginAdmin()">Enter Office Dashboard</button>
     </div>
 
@@ -293,7 +297,7 @@ input,select,textarea{font-family:inherit;font-size:15px}
 <!-- ============ ADMIN HOME ============ -->
 <div id="scr-admin" class="screen">
   <div class="topbar">
-    <div class="brand"><h1>SPACE<span>29</span></h1><small>Office Dashboard</small></div>
+    <div class="brand"><h1>SPACE<span>29</span></h1><small id="adminNameTag">Office Dashboard</small></div>
     <div class="tools">
       <button class="btn btn-ghost btn-sm" onclick="openTasks()">📋 Tasks</button>
       <button class="btn btn-ghost btn-sm" onclick="openTemplates()">⚙ Templates</button>
@@ -334,6 +338,10 @@ input,select,textarea{font-family:inherit;font-size:15px}
         <button class="btn btn-brass btn-sm" onclick="openAddItem()">+ Add Item</button>
       </div>
     </div>
+    <div class="search-row">
+      <input type="text" id="adminSearchBox" class="search-box" placeholder="🔍 Search design / room / stage..." oninput="applyAdminSearch(this.value)">
+    </div>
+    <div class="filter-chips" id="adminStatusFilters"></div>
     <div id="areaList"></div>
   </div>
 
@@ -408,7 +416,10 @@ input,select,textarea{font-family:inherit;font-size:15px}
     <button class="tab active" id="ctab-design" onclick="switchClientTab('design')">Designs</button>
     <button class="tab" id="ctab-notes" onclick="switchClientTab('notes')">Notes</button>
   </div>
-  <div id="cpane-design"><div id="clientAreaList"></div></div>
+  <div id="cpane-design">
+    <div class="search-row"><input type="text" id="clientSearchBox" class="search-box" placeholder="🔍 Search design / room..." oninput="applyClientSearch(this.value)"></div>
+    <div id="clientAreaList"></div>
+  </div>
   <div id="cpane-notes" style="display:none"><div id="clientNoteList"></div></div>
   <div class="portal-foot">Space29 Design LLP · For queries call your designer</div>
 </div>
@@ -569,11 +580,12 @@ input,select,textarea{font-family:inherit;font-size:15px}
    CONFIG.API_URL ma Apps Script Web App URL nakho = LIVE MODE
 ================================================================ */
 const CONFIG = {
-  API_URL: "https://script.google.com/macros/s/AKfycbxH3ps0_IRlkPGYYy_8wB5qHz6I7mvo2WjuEvoNeQZhLbAGugwap2kJhDNoYdExWO9-ig/exec",            // ← Apps Script Web App URL ahi paste karo (khali = demo mode)
+  API_URL: "",            // ← Apps Script Web App URL ahi paste karo (khali = demo mode)
   ADMIN_PIN: "1234"       // Demo mode only — live ma Settings tab mathi verify thay che
 };
 const IS_LIVE = !!CONFIG.API_URL;
 let ADMIN_PIN_S = "";               // live session ma admin pin
+let ADMIN_NAME = "";                // logged-in staff nu naam (attribution mate)
 let CLIENT_CRED = {pid:"", pin:""}; // live session ma client credentials
 
 /* ---------------- API layer ---------------- */
@@ -617,7 +629,7 @@ let DB = {
   ],
   items: [
     {id:"ITM001", project:"P001", area:"A000", stage:"Design & Working", name:"Final Layout with Furniture", status:"Approved", files:[{name:"layout-plan-v3.pdf"}], uploaded:"28/06/2026", sent:"29/06/2026", remark:""},
-    {id:"ITM002", project:"P001", area:"A001", stage:"Design & Working", name:"Living Room 3D Design", status:"Sent to Client", files:[{name:"living-room-3d-v2.jpg",note:"Check the ceiling light placement — final call on cove vs spot lights needed"},{name:"living-room-3d-night.jpg"}], uploaded:"04/07/2026", sent:"05/07/2026", remark:""},
+    {id:"ITM002", project:"P001", area:"A001", stage:"Design & Working", name:"Living Room 3D Design", status:"Sent to Client", files:[{name:"living-room-3d-v2.jpg",note:"Check the ceiling light placement — final call on cove vs spot lights needed",by:"Jay"},{name:"living-room-3d-night.jpg",by:"Jay"}], uploaded:"04/07/2026", sent:"05/07/2026", remark:""},
     {id:"ITM003", project:"P001", area:"A002", stage:"Design & Working", name:"Platform Working", status:"Uploaded", files:[{name:"kitchen-platform-wd.pdf"}], uploaded:"05/07/2026", sent:"", remark:""},
     {id:"ITM004", project:"P001", area:"A003", stage:"Design & Working", name:"Master Bedroom 3D Design", status:"In Progress", files:[], uploaded:"", sent:"", remark:""},
     {id:"ITM005", project:"P001", area:"A004", stage:"Selection", name:"Laminate / Veneer", status:"Revision", files:[{name:"wardrobe-laminate-options.pdf"}], uploaded:"01/07/2026", sent:"02/07/2026", remark:"Need slightly darker shade options"}
@@ -630,9 +642,9 @@ let DB = {
     {id:"V001", project:"P001", by:"Siddharth", note:"POP work chalu — hall ceiling 60% complete. Electrician ne AC points batavya. Next visit ma window sill levels check karvana.", photos:[{name:"hall-ceiling.jpg"},{name:"ac-points.jpg"}], ts:"05/07/2026 04:30 PM"}
   ],
   tasks: [
-    {id:"T001", type:"Task", title:"Living Room 3D night view revise karvu", assignee:"Jay", project:"P001", due:"08/07/2026", status:"Pending", note:"Client ne cove lights joiye", created:"05/07/2026", done:""},
-    {id:"T002", type:"Follow-up", title:"Rameshbhai ne laminate samples yaad karavva", assignee:"Siddharth", project:"P001", due:"06/07/2026", status:"Pending", note:"", created:"04/07/2026", done:""},
-    {id:"T003", type:"Task", title:"Office material rate list update", assignee:"", project:"", due:"", status:"Done", note:"", created:"01/07/2026", done:"03/07/2026"}
+    {id:"T001", type:"Task", title:"Living Room 3D night view revise karvu", assignee:"Jay", project:"P001", due:"08/07/2026", status:"Pending", note:"Client ne cove lights joiye", created:"05/07/2026", done:"", createdBy:"Siddharth"},
+    {id:"T002", type:"Follow-up", title:"Rameshbhai ne laminate samples yaad karavva", assignee:"Siddharth", project:"P001", due:"06/07/2026", status:"Pending", note:"", created:"04/07/2026", done:"", createdBy:"Siddharth"},
+    {id:"T003", type:"Task", title:"Office material rate list update", assignee:"", project:"", due:"", status:"Done", note:"", created:"01/07/2026", done:"03/07/2026", createdBy:"Jay"}
   ],
   log: [
     {ts:"29/06/2026 11:42 AM", project:"P001", item:"ITM001", itemName:"Overall Layout Plan", action:"Approved", remark:"", source:"Mobile"},
@@ -777,7 +789,7 @@ document.querySelectorAll(".modal-bg").forEach(m=>m.addEventListener("click",e=>
 async function loginAdmin(){
   const pin=$("adminPin").value.trim();
   if(!IS_LIVE){
-    if(pin===CONFIG.ADMIN_PIN){saveSession({mode:"admin",pin});showScreen("scr-admin");renderAdminHome();toast("Welcome, Space29 team 👋");}
+    if(pin===CONFIG.ADMIN_PIN){ADMIN_NAME="You (demo)";saveSession({mode:"admin",pin});showScreen("scr-admin");renderAdminHome();toast("Welcome, Space29 team 👋");}
     else toast("Wrong PIN — please try again");
     return;
   }
@@ -787,7 +799,7 @@ async function loginAdmin(){
     ADMIN_PIN_S=pin;
     hydrateAdmin(d);
     saveSession({mode:"admin",pin});
-    showScreen("scr-admin");renderAdminHome();toast("Welcome, Space29 team 👋");
+    showScreen("scr-admin");renderAdminHome();toast("Welcome, "+(ADMIN_NAME||"Space29 team")+" 👋");
   }catch(e){toast("⚠ "+e.message)}
 }
 async function loginClient(){
@@ -811,19 +823,21 @@ function hydrateAdmin(d){
   DB.projects=d.projects;DB.areas=d.areas;DB.items=d.items;DB.notes=d.notes;DB.log=d.log;
   DB.tasks=d.tasks||[];
   DB.visits=d.visits||[];
+  ADMIN_NAME=d.staffName||"";
   if(d.templates&&Object.keys(d.templates).length)TEMPLATES=d.templates;
 }
 function hydrateClient(d){
   DB.projects=[d.project];DB.areas=d.areas;DB.items=d.items;DB.notes=d.notes;DB.log=[];
   clientProject=d.project.id;
 }
-function logout(){currentProject=null;clientProject=null;ADMIN_PIN_S="";CLIENT_CRED={pid:"",pin:""};clearSession();$("adminPin").value="";$("clientPin").value="";showScreen("scr-login")}
+function logout(){currentProject=null;clientProject=null;ADMIN_PIN_S="";ADMIN_NAME="";CLIENT_CRED={pid:"",pin:""};adminSearch="";adminStatusFilter="All";clientSearch="";clearSession();$("adminPin").value="";$("clientPin").value="";showScreen("scr-login")}
 
 /* URL param support: portal.com/?p=P001 → client login prefill */
 (function(){const u=new URLSearchParams(location.search);if(u.get("p"))$("clientPid").value=u.get("p").toUpperCase()})();
 
 /* ---------------- ADMIN HOME ---------------- */
 function renderAdminHome(){
+  const tag=$("adminNameTag");if(tag)tag.textContent=ADMIN_NAME?"Office Dashboard · "+ADMIN_NAME:"Office Dashboard";
   const items=DB.items;
   const pendingWork=items.filter(i=>["Pending","In Progress","Revision"].includes(i.status)).length;
   const awaiting=items.filter(i=>i.status==="Sent to Client").length;
@@ -862,7 +876,14 @@ function projTitleBlock(p,extra){return `
 function renderProject(){
   const p=DB.projects.find(x=>x.id===currentProject);
   $("projHeader").innerHTML=projTitleBlock(p,`<span>Client PIN <b>${p.pin}</b></span>`);
+  adminSearch="";adminStatusFilter="All";
+  const sb=$("adminSearchBox");if(sb)sb.value="";
+  renderStatusFilters();
   renderAreas();renderNotes();renderVisits();renderLog();
+}
+function renderStatusFilters(){
+  const opts=["All",...STATUSES];
+  $("adminStatusFilters").innerHTML=opts.map(s=>`<button class="fchip ${s===adminStatusFilter?"active":""}" onclick="applyAdminStatusFilter('${s}')">${s}</button>`).join("");
 }
 function switchTab(t){
   ["check","notes","visits","log"].forEach(x=>{
@@ -876,7 +897,7 @@ function areaItemsHTML(items,isClient){
       <div class="file-wrap"><span class="file-pill" title="Click to preview" onclick="viewFile('${f.id||""}','${esc(f.name)}')">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
         ${esc(f.name)}<button class="file-x" title="Download" onclick="event.stopPropagation();downloadFile('${f.id||""}','${esc(f.name)}')">⬇</button>${isClient?"":`<button class="file-x" title="Add/edit instruction" onclick="event.stopPropagation();editFileNote('${it.id}',${fi})">📝</button><button class="file-x" title="Delete file" onclick="event.stopPropagation();deleteFile('${it.id}',${fi})">×</button>`}</span>
-      ${f.note?`<div class="file-note">📝 ${esc(f.note)}</div>`:""}</div>`).join("")+`</div>`:"";
+      ${f.note?`<div class="file-note">📝 ${esc(f.note)}</div>`:""}${!isClient&&f.by?`<div class="file-by">⬆ Uploaded by ${esc(f.by)}</div>`:""}</div>`).join("")+`</div>`:"";
     const remarkHTML=it.remark?`<div class="remark">✎ Revision: ${esc(it.remark)}</div>`:"";
 
     if(isClient){
@@ -924,6 +945,23 @@ function toggleArea(id,el){
   if(openAreas.has(id))openAreas.delete(id);else openAreas.add(id);
   el.classList.toggle("open");
 }
+
+/* ---------------- search & status filter (checklist) ---------------- */
+let adminSearch="", adminStatusFilter="All";
+let clientSearch="";
+function itemSearchMatch(it,areaName,term){
+  if(!term)return true;
+  const t=term.toLowerCase();
+  return it.name.toLowerCase().includes(t)||it.stage.toLowerCase().includes(t)||(areaName||"").toLowerCase().includes(t);
+}
+function buildAreaChildren(areas){
+  const map={};
+  areas.forEach(a=>{const p=a.parent||"";(map[p]=map[p]||[]).push(a);});
+  Object.values(map).forEach(arr=>arr.sort((x,y)=>x.order-y.order));
+  return map;
+}
+
+/* recursive renderer — Floor → Room → Element → ... (koi depth limit nathi) */
 function renderAreasGeneric(containerId,pid,isClient){
   if(!seededProjects.has(pid)){
     seededProjects.add(pid);
@@ -932,42 +970,60 @@ function renderAreasGeneric(containerId,pid,isClient){
       if(its.some(i=>i.status==="Sent to Client"||i.status==="Revision"))openAreas.add(a.id);
     });
   }
-  const areas=DB.areas.filter(a=>a.project===pid).sort((a,b)=>a.order-b.order);
-  const mains=areas.filter(a=>!a.parent);
-  let html="";
-  mains.forEach(a=>{
-    const subs=areas.filter(s=>s.parent===a.id);
-    const ownItems=DB.items.filter(i=>i.area===a.id);
-    if(subs.length&&!ownItems.length){
-      /* Floor jevu area — fakt heading, andar na rooms cards tarike */
-      const subHTML=subs.map(s=>areaBlock(s,true,isClient,"floor-room")).join("");
-      if(isClient&&!subHTML)return; /* client ne aa floor ma kai visible nathi */
-      const floorBtns=isClient?"":`<button class="mini-act" title="Rename" onclick="renameArea('${a.id}')">✎</button><button class="mini-act" title="Delete" onclick="deleteArea('${a.id}')">🗑</button>`;
-      html+=`<div class="floor-head">${esc(a.name)}${floorBtns}</div>`+subHTML;
-    }else{
-      html+=areaBlock(a,false,isClient);
-      subs.forEach(s=>html+=areaBlock(s,true,isClient));
+  const term=isClient?clientSearch:adminSearch;
+  const statusFilter=isClient?"All":adminStatusFilter;
+  const isFiltering=!!term||statusFilter!=="All";
+  const areas=DB.areas.filter(a=>a.project===pid);
+  const childMap=buildAreaChildren(areas);
+  const roots=childMap[""]||[];
+
+  function itemsFor(a){
+    let items=DB.items.filter(i=>i.area===a.id);
+    if(isClient)items=items.filter(i=>["Sent to Client","Approved","Revision"].includes(i.status));
+    if(statusFilter!=="All")items=items.filter(i=>i.status===statusFilter);
+    if(term)items=items.filter(i=>itemSearchMatch(i,a.name,term));
+    return items;
+  }
+  function hasVisible(a){
+    if(itemsFor(a).length)return true;
+    return (childMap[a.id]||[]).some(hasVisible);
+  }
+  function renderNode(a,depth){
+    if(!hasVisible(a))return "";
+    const kids=childMap[a.id]||[];
+    const isPureContainer=kids.length&&!DB.items.some(i=>i.area===a.id);
+    if(isPureContainer){
+      const childHTML=kids.map(k=>renderNode(k,depth+1)).join("");
+      const btns=isClient?"":`<button class="mini-act" title="Rename" onclick="renameArea('${a.id}')">✎</button><button class="mini-act" title="Delete" onclick="deleteArea('${a.id}')">🗑</button>`;
+      const indent=depth>0?` style="margin-left:${depth*14}px"`:"";
+      return `<div class="floor-head"${indent}>${esc(a.name)}${btns}</div>`+childHTML;
     }
-  });
-  $(containerId).innerHTML=html||`<div class="empty">No areas yet — start with "+ Add Area"</div>`;
+    const items=itemsFor(a);
+    let out=areaBlock(a,items,depth,isClient,isFiltering);
+    if(kids.length)out+=kids.map(k=>renderNode(k,depth+1)).join("");
+    return out;
+  }
+  const html=roots.map(a=>renderNode(a,0)).join("");
+  $(containerId).innerHTML=html||(isFiltering?`<div class="empty">No matching designs found</div>`:`<div class="empty">No areas yet — start with "+ Add Area"</div>`);
 }
-function areaBlock(a,isSub,isClient,extraClass){
-  let items=DB.items.filter(i=>i.area===a.id);
-  if(isClient) items=items.filter(i=>["Sent to Client","Approved","Revision"].includes(i.status));
-  if(isClient&&!items.length) return "";
+function areaBlock(a,items,depth,isClient,forceOpen){
   const done=items.filter(i=>i.status==="Approved").length;
-  const isOpen=openAreas.has(a.id);
+  const isOpen=forceOpen||openAreas.has(a.id);
   const adminBtns=isClient?"":`<button class="mini-act" title="Rename" onclick="event.stopPropagation();renameArea('${a.id}')">✎</button><button class="mini-act" title="Delete" onclick="event.stopPropagation();deleteArea('${a.id}')">🗑</button>`;
   const addBtn=isClient?"":`<div style="padding:10px 16px;border-top:1px solid var(--line)"><button class="icon-btn" style="color:var(--brass);border-style:dashed" onclick="openAddItem('${a.id}')">+ Add item here</button></div>`;
-  return `<div class="area ${isSub?"subarea":""} ${extraClass||""} ${isOpen?"open":""}">
+  const indent=depth>0?` style="margin-left:${depth*14}px"`:"";
+  return `<div class="area ${depth>0?"subarea":""} ${isOpen?"open":""}"${indent}>
     <div class="area-head" onclick="toggleArea('${a.id}',this.parentElement)">
-      <h4>${isSub?'<span class="sub-mark">↳</span>':""}${esc(a.name)}</h4>
+      <h4>${depth>0?'<span class="sub-mark">↳</span>':""}${esc(a.name)}</h4>
       <div class="right">${adminBtns}<span>${done}/${items.length}</span><span class="caret">▸</span></div>
     </div>
     <div class="area-body">${areaItemsHTML(items,isClient)}${addBtn}</div>
   </div>`;
 }
 function renderAreas(){renderAreasGeneric("areaList",currentProject,false)}
+function applyAdminSearch(v){adminSearch=v;renderAreas();}
+function applyAdminStatusFilter(v){adminStatusFilter=v;renderStatusFilters();renderAreas();}
+function applyClientSearch(v){clientSearch=v;renderClient();}
 
 /* ---------------- area rename / delete ---------------- */
 function renameArea(id){
@@ -1024,15 +1080,22 @@ function deleteFile(itemId,fi){
 function requestDrawing(itemId){
   const it=DB.items.find(x=>x.id===itemId);
   const isClient=!!clientProject&&!currentProject;
-  askConfirm("Request this drawing?","'"+it.name+"'\nSpace29 team will be notified on Telegram.",()=>{
+  askConfirm("Request this drawing?","'"+it.name+"'\nSpace29 team will be notified on Telegram + added to Tasks.",()=>{
+    const proj=DB.projects.find(p=>p.id===it.project);
+    const area=DB.areas.find(a=>a.id===it.area);
     DB.log.push({ts:nowStamp(),project:it.project,item:it.id,itemName:it.name,action:"Drawing Requested",remark:"",source:isClient?"Client":"Office"});
     if(IS_LIVE){
       const payload=isClient
         ?{by:"client",projectId:CLIENT_CRED.pid||clientProject,pin:CLIENT_CRED.pin,itemId}
         :{by:"admin",adminPin:ADMIN_PIN_S,itemId};
       apiBg("requestDrawing",payload);
+    }else{
+      DB.tasks.push({id:nextId("T",DB.tasks),type:"Task",title:"Drawing: "+it.name+" — "+(proj?proj.site:it.project),
+        assignee:"",project:it.project,due:"",status:"Pending",
+        note:(area?area.name+" · ":"")+it.stage+" · Requested by "+(isClient?"Client":"Office"),
+        created:today(),done:"",createdBy:isClient?"":(ADMIN_NAME||"You (demo)")});
     }
-    toast("📐 Drawing request sent — team notified");
+    toast("📐 Drawing request sent — team notified + task added");
     if(isClient)renderClient();else renderLog();
   },"📐 Request","var(--brass)");
 }
@@ -1063,7 +1126,7 @@ async function uploadFiles(itemId,input){
   const added=[];
 
   if(!IS_LIVE){
-    files.forEach(f=>{const o={name:f.name,note:""};it.files.push(o);added.push(o);});
+    files.forEach(f=>{const o={name:f.name,note:"",by:ADMIN_NAME||"You (demo)"};it.files.push(o);added.push(o);});
     it.uploaded=today();
     if(it.status==="Pending"||it.status==="In Progress")it.status="Uploaded";
     toast(added.length+" file(s) uploaded (demo)");
@@ -1088,7 +1151,7 @@ async function uploadFiles(itemId,input){
       setUplRow(row,"","Uploading…",55);
       const out=await api("uploadFile",{adminPin:ADMIN_PIN_S,itemId,name:f.name,mime:f.type||"application/octet-stream",data64});
       setUplRow(row,"done","Done ✓",100);
-      const o={id:out.id,name:f.name,note:""};
+      const o={id:out.id,name:f.name,note:"",by:ADMIN_NAME||""};
       it.files.push(o);added.push(o);
       it.uploaded=today();
       if(it.status==="Pending"||it.status==="In Progress")it.status="Uploaded";
@@ -1483,10 +1546,20 @@ function submitRevision(){
   closeModals();toast("✎ Revision request sent");renderClient();
 }
 
-/* area modal parent dropdown fill on open */
+/* area modal parent dropdown fill on open — koi pan existing area ni andar add kari shakay (arbitrary depth) */
 document.querySelector('[onclick="openModal(\'modal-area\')"]').addEventListener("click",()=>{
-  const mains=DB.areas.filter(a=>a.project===currentProject&&!a.parent);
-  $("naParent").innerHTML=`<option value="">— Main area (not inside any) —</option>`+mains.map(a=>`<option value="${a.id}">Inside ${esc(a.name)}</option>`).join("");
+  const areas=DB.areas.filter(a=>a.project===currentProject);
+  const childMap={};
+  areas.forEach(a=>{const p=a.parent||"";(childMap[p]=childMap[p]||[]).push(a);});
+  Object.values(childMap).forEach(arr=>arr.sort((x,y)=>x.order-y.order));
+  let opts=`<option value="">— Top level (not inside any) —</option>`;
+  (function walk(parentId,depth){
+    (childMap[parentId]||[]).forEach(a=>{
+      opts+=`<option value="${a.id}">${"—".repeat(depth)} ${esc(a.name)}</option>`;
+      walk(a.id,depth+1);
+    });
+  })("",1);
+  $("naParent").innerHTML=opts;
   areaPresetCache=roomPresets();
   $("naPreset").innerHTML=`<option value="">— Blank area (no items) —</option>`+areaPresetCache.map((p,i)=>{
     const n=(p.work||[]).length+(p.sel||[]).length;
@@ -1537,6 +1610,7 @@ function renderTasks(){
           ${t.assignee?`<span>👤 ${esc(t.assignee)}</span>`:""}
           ${t.due?`<span class="${od?"overdue":""}">📅 ${t.due}${od?" — OVERDUE":""}</span>`:""}
           ${proj?`<span>🏠 ${esc(proj.site)}</span>`:""}
+          ${t.createdBy?`<span>🖊️ Added by ${esc(t.createdBy)}</span>`:""}
           ${t.done?`<span>✓ ${t.done}</span>`:""}
         </div>
         ${t.note?`<div class="t-note">💬 ${esc(t.note)}</div>`:""}
@@ -1566,7 +1640,7 @@ function createTask(){
     closeModals();toast("Adding task…");
     return;
   }
-  DB.tasks.push({id:nextId("T",DB.tasks),type:payload.type,title,assignee:payload.assignee,project:payload.projectId,due:payload.due,status:"Pending",note:payload.note,created:today(),done:""});
+  DB.tasks.push({id:nextId("T",DB.tasks),type:payload.type,title,assignee:payload.assignee,project:payload.projectId,due:payload.due,status:"Pending",note:payload.note,created:today(),done:"",createdBy:ADMIN_NAME||"You (demo)"});
   closeModals();renderTasks();toast("📋 Task added ✓ (demo — live ma Telegram jase)");
 }
 function toggleTaskDone(id){
